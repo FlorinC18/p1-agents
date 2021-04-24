@@ -1,0 +1,8 @@
+#
+#  This info only contains information about the set of tests that I will include 
+#  in this folder, all this information is still not available!
+#
+test1 (states1.txt steps1.txt envelopes1.txt):  5x5 world,  5 steps ,  envelopes at  2,2 4,4   
+test2 (states2.txt steps2.txt envelopes2.txt): 5x5 world,  7 steps , envolepes at  3,2 3,4  
+test3 (states3.txt steps3.txt envelopes3.txt): 7x7 world,  6 steps,  envelopes at  3,2 4,4 2,6  
+test4 (states4.txt steps4.txt envelopes4.txt): 7x7 world,  12 steps , envelopes at  6,2 4,4 2,6  

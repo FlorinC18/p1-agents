@@ -1,0 +1,355 @@
+\documentclass{tufte-handout}
+%\usepackage[ruled,vlined,slide]{algorithm2e}
+\usepackage[utf8]{inputenc}
+\usepackage{color}
+
+\usepackage[english]{babel}
+
+\usepackage{listings}
+\lstset{language=Python}
+%\lstset{basicstyle=\tt\footnotesize}
+\lstset{basicstyle=\tt\small}
+\lstset{tabsize=2}
+\lstset{commentstyle=\textit}
+\lstset{extendedchars=true}
+
+\lstset{numbers=left,       % where to put the line-numbers
+numberstyle=\footnotesize,  % the size of the fonts that are used for the line-numbers
+stepnumber=1,             % the step between two line-numbers. If it's 1, each line
+                          % will be numbered
+numbersep=5pt,                  % how far the line-numbers are from the code
+backgroundcolor=\color{lightgray},  % choose the background color. You must add \usepackage{color}
+showspaces=false,               % show spaces adding particular underscores
+showstringspaces=false,         % underline spaces within strings
+showtabs=false,           % show tabs within strings adding particular under scores
+frame=single,                   % adds a frame around the code
+captionpos=b,                   % sets the caption-position to bottom
+breaklines=true,                % sets automatic line breaking
+breakatwhitespace=false,      % sets if automatic breaks should only happen at whitespace
+title=\lstname,        % show the filename of files included with \lstinputlisting;
+                       % also try caption instead of title
+}
+
+
+%\geometry{showframe}% for debugging purposes -- displays the margins
+
+\usepackage{amsmath}
+
+% Set up the images/graphics package
+\usepackage{graphicx}
+\setkeys{Gin}{width=\linewidth,totalheight=\textheight,keepaspectratio}
+\graphicspath{{graphics/}}
+
+\title[HW 1: Knowledge Based Agents]{Automatic Reasoning and Learning \\-
+Homework Assignment 1: Knowledge Based Agents with  CP0 Logic}
+\author[ramon]{Ram\'on B\'ejar}
+% \date{28 March 2019}  % if the \date{} command is left out, the current date will  be used
+
+% The following package makes prettier tables.  We're all about the bling!
+\usepackage{booktabs}
+
+% The units package provides nice, non-stacked fractions and better spacing
+% for units.
+\usepackage{units}
+
+% The fancyvrb package lets us customize the formatting of verbatim
+% environments.  We use a slightly smaller font.
+\usepackage{fancyvrb}
+\fvset{fontsize=\normalsize}
+
+% Small sections of multiple columns
+\usepackage{multicol}
+
+% Provides paragraphs of dummy text
+\usepackage{lipsum}
+
+% These commands are used to pretty-print LaTeX commands
+\newcommand{\doccmd}[1]{\texttt{\textbackslash#1}}% command name -- adds backslash automatically
+\newcommand{\docopt}[1]{\ensuremath{\langle}\textrm{\textit{#1}}\ensuremath{\rangl
+e}}% optional command argument
+\newcommand{\docarg}[1]{\textrm{\textit{#1}}}% (required) command argument
+\newenvironment{docspec}{\begin{quote}\noindent}{\end{quote}}% command specification environment
+\newcommand{\docenv}[1]{\textsf{#1}}% environment name
+\newcommand{\docpkg}[1]{\texttt{#1}}% package name
+\newcommand{\doccls}[1]{\texttt{#1}}% document class name
+\newcommand{\docclsopt}[1]{\texttt{#1}}% document class option name
+
+
+\usepackage{lipsum, ifluatex, ifxetex}
+%Next block avoids bug, from  http://tex.stackexchange.com/a/200725/1913
+% \renewcommand\allcapsspacing[1]{{\addfontfeature{LetterSpace=15}#1}}
+ % \renewcommand\smallcapsspacing[1]{{\addfontfeature{LetterSpace=10}#1}}
+
+%\ifxetex
+%  \newcommand{\textls}[2][5]{%
+%    \begingroup\addfontfeatures{LetterSpace=#1}#2\endgroup
+%  }
+%  \renewcommand{\allcapsspacing}[1]{\textls[15]{#1}}
+%  \renewcommand{\smallcapsspacing}[1]{\textls[10]{#1}}
+%  \renewcommand{\allcaps}[1]{\textls[15]{\MakeTextUppercase{#1}}}
+%  \renewcommand{\smallcaps}[1]{\smallcapsspacing{\scshape\MakeTextLowercase{#1}}}
+%  \renewcommand{\textsc}[1]{\smallcapsspacing{\textsmallcaps{#1}}}
+% \fi
+
+
+
+\begin{document}
+\maketitle
+
+\section{Goal}
+
+\begin{fullwidth}
+The goal of this work is to develop an intelligent agent for
+the Envelope World problem. In this world, we have a grid of
+$n \times n$ cells. Some cells contain an envelope (with some money inside),
+ and we know that  there is at least one envelope in the world.
+We have an {\it envelope finder agent}, that uses a sensor to discover the position
+of the envelopes.  If the agent is located at position $(x,y)$, it can receive
+any of these readings from the sensor (it can even receive {\bf many} of these readings
+depending on the number and positions of envelopes in the 3x3 square around its
+ current position):
+\begin{enumerate}
+\item If there are some envelopes at positions $\{(x+1,y-1),(x+1,y),(x+1,y+1) \} $,
+it will receive the reading: 1.
+\item  If there are some envelopes at positions $\{(x+1,y+1),(x,y+1),(x-1,y+1) \} $,
+it will receive the reading: 2.
+\item  If there are some envelopes at positions $\{(x-1,y-1),(x-1,y),(x-1,y+1) \} $,
+it will receive the reading: 3.
+\item  If there are some envelopes at positions $\{(x+1,y-1),(x,y-1),(x-1,y-1) \} $,
+it will receive the reading: 4.
+\item  If there is an envelope at position $(x,y)$, it will receive the reading: 5.
+\end{enumerate}
+If there are no envelopes in any of these positions, the sensor will give no readings.
+Observe that the presence of envelopes in the {\it corner} positions of the 3x3 square,
+will produce the sensor to give two different readings. For example, an envelope
+at $(x+1,y+1)$ will give the sensor readings: 1 and 2.
+We assume the sensor works perfectly at every position where the finder agent moves to.
+
+You have to develop your program using the java classes I have provided
+with this assignment, where some functions must be implemented, the
+finished ones can be modified, and new ones added.
+\textcolor{red}{BEWARE:} Everything that I ask in this document that appears in
+\textcolor{red}{red} is something that is mandatory to satisfy in order to have
+your project evaluated. So, any not satisfied  red point will make the grade of this
+project equal to 0. So, before delivering your project, check that you satisfy all these
+minimal points. Check it with me, before delivering it, if you want to be sure.
+You can work in groups of two or three.
+% \end{fullwidth}
+
+Your application works with two main objects: the envelope finder agent and the world environment.
+The world environment is simply an interface that is used to model what the agent performs in the
+world and the information it receives from the world with its sensor.
+The application has to work with the following input:
+\begin{enumerate}
+\item The dimension of the world (the value of $n$ for the
+$n\times n$ Envelope World) (this information is needed by both
+the finder agent and the world environment object).
+\item This information is used only for the finder agent:
+\begin{enumerate}
+\item Number of steps $(l)$ to perform.
+\item A sequence of $l$ steps of this form:
+$$
+ x_1,y_1 \ x_2,y_2 \ ... \ x_l,y_l
+$$
+where $ x_t,y_t $ indicates that at time step $t$ the agent moves
+ to position $(x,y)$.
+This sequence of steps will be stored in an text file, in a single line.
+\end{enumerate}
+\item This information is used only for the  world environment object:
+\begin{enumerate}
+\item The list of envelope locations, following the same format that the sequence
+of steps: in a file with a single line with the positions of $m$ envelopes (where always
+$m \geq 1$) as:
+$$
+ ex_1,ey_1 \ ex_2,ey_2 \ ... \ ex_m,ey_m
+$$
+\end{enumerate}
+\end{enumerate}
+
+
+%~\footnote{You can assume that any input sequence for your program will be a
+%{\bf valid and consistent sequence of readings}, so it will never happen that
+%from a sequence of readings you can derive contradictory conclusions for a
+%same location. So, when you test your program use {\bf only} input sequences
+%with this property}.
+
+% \end{enumerate}
+
+% \begin{fullwidth}
+With that input, your finder agent should print at the standard output
+ (the screen)
+the knowledge state for possible locations of envelopes that the agent
+has {\bf after it processes each step of the agent}.
+This knowledge state will be presented as the $n \times n$
+matrix with the $?$ and $X$ symbols, where $?$ indicates a possible location
+and $X$ a {\bf not possible location}. For using this representation of knowledge states, your
+agent will use the class {\tt EFState}, that is already implemented, but it can
+be modified if you need to.
+
+\textcolor{blue}{Remark: Notice that when the sensor returns the value 5, it means there is
+an envelope at current position $(x,y)$.
+In that case, the agent could infer that $(x,y)$ is not only a possible position, but a secure
+one. However, to simplify the problem and do not make the agent to perform more than one kind of inference questions (questions of the kind $\models e_{x',y'}^{t+1}$ in addition to the kind $\models \neg e_{x',y'}^{t+1}$), we will consider that position simply as a  possible one for envelopes. So, for example, imagine that at position $(x,y)$ the only value readed from the sensor is 5. Then, the agent should infer, when doing questions of the kind $\models \neg e_{x',y'}^{t+1}$, that any position in the 3x3 square around $(x,y)$ is a not possible location, except position $(x,y)$ where the query $\models \neg e_{x,y}^{t+1}$ should fail. So, use only queries of the kind $  \models \neg e_{x',y'}^{t+1}$ (discover only not possible locations and consider the rest as possible locations).  }
+\end{fullwidth}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Requirements}
+
+\begin{fullwidth}
+You have to satisfy the following requeriments:
+\begin{itemize}
+\item \textcolor{red}{Use a clean TOP-DOWN design, with small member functions in your
+agent classes, such that each function performs a well defined function.
+You must comment each member function, explaining what the function
+does, its input arguments and its output (if any).
+Comment all the function headers and relevant class variables using javadoc
+comments.
+All your code must contain enough comments so that you can convince
+me that you really understand how your program works.}
+% A bad design that makes difficult to understand how your agents work
+% may produce the grade to be as low as a 6. }
+\item \textcolor{red}{Present all your code well organized, using a consistent style of indentation. Use clear and informative names for the variables you use in your
+class and class functions}.
+\item Your finder agent must use {\bf propositional logic} to reason
+ about the possible locations of envelopes. So, the architecture
+of your agent will follow the one we have seen at the classroom
+ (check the slides about knowledge based systems with propositional
+logic) for intelligent agents based on propositional
+logic, so the main process that your finder agent must   implement is:
+\begin{enumerate}
+\item When no inputs have been processed, the only knowledge of
+the agent is the original formula $\Gamma$ you have created for
+the $n\times n$ world.
+\item Each time $t$ the agent receives new information (detector sensor information),
+  your agent must:
+\begin{enumerate}
+\item For any location $(x',y')$ of the world, ask whether
+it is not possible that an envelope is in that location, that is,
+the agent checks if:
+$$ \Gamma \cup E \models \neg e_{x',y'}^{t+1}  $$
+holds for its current knowledge formula $\Gamma$, where $E$ represents
+the information the agent has obtained from the information of the sensor,
+ but expressed in propositional logic (the evidence about the world),
+and assuming $e_{x',y'}^{t+1} $ is the variable used to encode that
+an envelope is located at $(x',y')$.
+As you know, you can perform the inference questions using a
+ SAT solver. Use the {\tt sat4j} library (mainly using the ISolver interface at org.sat4j.specs), or any other external SAT solver that you want.
+\item Update the knowledge $\Gamma$ of the agent that
+is true so far  incorporating
+all the clauses corresponding to the positions that have been
+ inferred as {\bf not possible locations}. That is, add all the
+clauses of the set:
+$$
+ \{ \ (\neg e_{x',y'}^{t-1}) \ | \ \Gamma \cup E
+    \models \neg  e_{x',y'}^{t+1} \} $$
+So at the end of the iteration the knowledge formula $\Gamma$ is
+updated with new information (or just before performing the next one).
+Observe that any location $(x',y')$ that was previously not possible for an envelope
+(so $ \neg e_{x',y'}^{t-1} $ was already a clause in $\Gamma$ at the beginning of
+the iteration), will be also not possible at time step $t+1$.
+\end{enumerate}
+\end{enumerate}
+\item  \textcolor{red}{You must implement a minimal set of testing functions in the class
+{\tt EnvelopeFinderTest.java}, for testing all the example step sequences I will provide,
+ using {\tt junit4}}. This class has some functions
+implemented, but some must be finished and you can add any other functions you need for this
+testing class.
+%Additionally, to get a better grade for this work, you can also provide unit testing functions
+%in the class to test more basic functionalities of the class, like for example the functions
+%used to check logical consequences of the logical formula of the agent ($\Gamma$).
+%If you only provide testing at the level of checking step sequences with their target states
+% (following the example provided), the maximum grade of this project will be 9 points.
+\end{itemize}
+\end{fullwidth}
+
+\section{Minimal set of functions}
+
+\begin{fullwidth}
+This is the minimal mandatory set of functions that you must implement in the class EnvelopeFinder
+(check the javadoc comments at the headers of such functions for explanations):
+\begin{itemize}
+% \item {\tt public AMessage DetectsAt( )}.
+\item {\tt public void processDetectorSensorAnswer( AMessage ans )}.
+%\item {\tt public void processPirateAnswer( AMessage ans )}.
+% \item {\tt public void addDetectorSensorEvidence(  )}.
+\item {\tt  public void addLastFutureClausesToPastClauses() }.
+\item {\tt public void  performInferenceQuestions()}.
+% \item {\tt public void sounds\_implications( )}.
+\end{itemize}
+In the class {\tt EnvelopeWorldEnv} you must implement:
+\begin{itemize}
+\item {\tt acceptMessage(AMessage msg)}. Because the provided implementation only works with
+the {\tt moveto} message. You must extend it to accept and answer to the other message:
+{\tt detectsat}.
+\item {\tt loadEnvelopeLocations( String EnvelopeFile )}.
+\end{itemize}
+In the class {\tt EnvelopeWorld} (main class of the program) you must implement:
+\begin{itemize}
+\item {\tt runStepsSequence( int wDim, int numSteps,
+                           String stepsFile, String envelopesFile )}.
+\item {\tt void main ( String[] args)}.
+\end{itemize}
+And this for the test class EnvelopeFinderTest:
+\begin{itemize}
+\item {\tt public void testMakeSimpleStep(  EnvelopeFinder eAgent,
+                                            EFState targetState )}.
+\item {\tt  testMakeSeqOfSteps( int wDim,
+                                 int numSteps, String stepsFile, String fileStates, String envelopesFile )}.
+\end{itemize}
+
+%\begin{fullwidth}
+In the test class, there is an example test (function {\tt  EWorldTest1()}), that uses
+{\tt testMakeSeqOfSteps} to implement one step sequence test. You can use this example to build
+the other tests I will ask, or use some kind of parameterized tests to implement all of them.
+All the other existing functions can be modified to fit the needs of your design,
+and you can add any  additional functions you need.
+\end{fullwidth}
+
+
+\section{What you Have to Deliver}
+
+\begin{fullwidth}
+You must deliver:
+\begin{itemize}
+\item  \textcolor{red}{{\bf maven build file}. I have to be able to build your
+ application with the maven file I have included with the initial
+ code, or with a modified version of it. Even if you modify the maven
+ file (with more dependencies or plugins), this is the set of maven commands that
+ need to work OK (as I will use them when checking your application):}
+\begin{enumerate}
+  \item {\tt mvn package}: Build jar file but first execute all the unit tests found in the test
+  subfolder
+   \item {\tt mvn test}: execute all the unit tests found in the test
+   subfolder
+  \item {\tt mvn exec:java -Dexec.args="dim numsteps stepsfilename envelopesfilename"}: execute the main
+  class of the program passing to the main function the required arguments.
+  \item {\tt mvn javadoc:javadoc}. Generate in html files all the documentation at the level
+  of classes, class functions and package general documentation.
+\end{enumerate}
+\item {\bf Documentation}. A document where you explain the
+design of your program.
+The documentation must also contain an explanation of the
+propositional logical formula  that you have used to
+encode the inference rules of the agent. You can write all this
+documentation using javadoc comments in the different classes, and in the
+documentation at the level of the application package (file {\tt package-info.java}).
+Or you can provide a separate PDF file for this, using javadoc comments
+only for class and class functions, as I have requested in the Requirements.
+All the javadoc html documents obtained, will be found in the folder:
+{\tt target/site/apidocs/apryraz/eworld/}.
+\item {\bf Code}. Give all the needed code for running your
+program. Use the same folder structure you have in the initial code I have provided,
+or modify if you think that this is needed, but then make sure that the maven build file works
+OK. {\bf Do not give a program} that needs the installation of
+special  libraries that cannot be found in maven repositories (or include
+the needed jar files in your code but then add the appropriate dependencies in the
+maven file). So, check that you use only standard  java libraries  or that you have
+ provided the needed maven dependencies, so that they will be downloaded
+automatically by maven if needed.
+If you use a satsolver different from sat4j, you must, of course, include it also in
+your code.
+\end{itemize}
+\end{fullwidth}
+
+\end{document}
