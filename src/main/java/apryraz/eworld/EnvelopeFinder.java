@@ -10,20 +10,14 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import static java.lang.System.exit;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.util.Iterator;
+
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import org.sat4j.core.Vec;
 import org.sat4j.core.VecInt;
 
 import org.sat4j.specs.*;
 import org.sat4j.minisat.*;
-import org.sat4j.reader.*;
-
-
 
 
 /**
@@ -405,37 +399,75 @@ public class EnvelopeFinder  {
         // call here functions to add the different sets of clauses
         // of Gamma to the solver object
 
+        // Create and add consistence clauses
+        ArrayList<VecInt> consistencyClauses = createConsistencyClauses();
+        for (VecInt clause:consistencyClauses) {
+            solver.addClause(clause);
+        }
 
-        //
-        // EXEMPLE of building a clause:
-        // VecInt Clause = new VecInt();
-        //  insert a literal into the clause:
-        //    Clause.insertFirst(actualLiteral);
-        //
-        //  Insert the clause into the formula:
-        //  solver.addClause(Clause);
+        // Create and add ALO clauses for the variables describing the past
+        VecInt pastALOClause = createALOClauses(this.EnvelopePastOffset);
+        solver.addClause(pastALOClause);
 
+        // Create and add ALO clauses for the variables describing the future
+        VecInt futureALOClause = createALOClauses(this.EnvelopeFutureOffset);
+        solver.addClause(futureALOClause);
+
+        // Create and add the clauses corresponding to the reading 1
+        ArrayList<VecInt> reading1 = createReading1Clauses();
+        for (VecInt clause:reading1) {
+            solver.addClause(clause);
+        }
+
+        // Create and add the clauses corresponding to the reading 2
+        ArrayList<VecInt> reading2 = createReading2Clauses();
+        for (VecInt clause:reading2) {
+            solver.addClause(clause);
+        }
+
+        // Create and add the clauses corresponding to the reading 3
+        ArrayList<VecInt> reading3 = createReading3Clauses();
+        for (VecInt clause:reading3) {
+            solver.addClause(clause);
+        }
+
+        // Create and add the clauses corresponding to the reading 4
+        ArrayList<VecInt> reading4 = createReading4Clauses();
+        for (VecInt clause:reading4) {
+            solver.addClause(clause);
+        }
+
+        // Create and add the clauses corresponding to the reading 5
+        ArrayList<VecInt> reading5 = createReading5Clauses();
+        for (VecInt clause:reading5) {
+            solver.addClause(clause);
+        }
 
         return solver;
     }
 
     /**
-     * This method creates all the consistence clauses, to make sure that everything in the past is consistent with the future
+     * This method creates all the consistency clauses, to make sure that everything in the past is consistent with the future:
      *
-     * @return A list of all the consistence clauses
+     * @return A list of all the consistency clauses
      */
-    public ArrayList<VecInt> createConsistenceClauses() {
-        ArrayList<VecInt> consistenceClauses = new ArrayList<>();
+    public ArrayList<VecInt> createConsistencyClauses() {
+        ArrayList<VecInt> consistencyClauses = new ArrayList<>();
+        // for each position of the world:
         for(int i = 1; i <= this.WorldDim; i ++)
             for(int j = 1; j <= this.WorldDim; j++){
+                // Create consistency clause:
                 VecInt clause = new VecInt();
+                // get e(x,y)^t-1
                 int pastLiteral = coordToLineal(i, j, this.EnvelopePastOffset);
                 clause.insertFirst(pastLiteral);
+                // get e(x,y)^t+1
                 int futureLiteral = coordToLineal(i, j, this.EnvelopeFutureOffset);
                 clause.insertFirst(-futureLiteral);
-                consistenceClauses.add(clause);
+                // add e(x,y)^t-1 v ¬e(x,y)^t+1 clause
+                consistencyClauses.add(clause);
         }
-        return consistenceClauses;
+        return consistencyClauses;
     }
 
     /**
@@ -443,19 +475,29 @@ public class EnvelopeFinder  {
      * @param offset initial value for the subset of position variables (past or future)
      * @return ALO clause
      */
-    public VecInt createAloClauses(int offset) {
+    public VecInt createALOClauses(int offset) {
+        // Depending on the offset:
+        //      ALO clause for the past: e(1,1)^t-1 v e(1,2)^t-1 v ... v e(n,n)^t-1
+        //      or
+        //      ALO clause for the future: e(1,1)^t+1 v e(1,2)^t+1 v ... v e(n,n)^t+1
         VecInt clause = new VecInt();
+        // for each position of the world:
         for(int i = 1; i <= this.WorldDim; i++){
             for(int j = 1; j <= this.WorldDim; j++) {
+                // add e(x,y)^t-1 clause or e(x,y)^t+1 clause depending on the offset
                 clause.insertFirst(coordToLineal(i, j, offset));
             }
         }
         return clause;
     }
 
+    /**
+     * This method creates the clauses corresponding to the reading 1 of the sensor
+     * @return A list of all the clauses corresponding to the reading 1 of the sensor
+     */
     public ArrayList<VecInt> createReading1Clauses() {
-        ArrayList<VecInt> R1Clauses = new ArrayList<>();
-
+        ArrayList<VecInt> r1Clauses = new ArrayList<>();
+        // for each position of the world:
         for(int i = 1; i <= this.WorldDim; i++) {
             for(int j = 1; j <= this.WorldDim; j++) {
                 // get r1(x,y)^t
@@ -466,89 +508,204 @@ public class EnvelopeFinder  {
                     if(j - 1 <= this.WorldDim) {
                         VecInt clause = new VecInt();
                         clause.insertFirst(r1Literal);
+                        // get e(x+1,y-1)^t+1
                         int posLiteral = coordToLineal(i + 1, j - 1, this.EnvelopeFutureOffset);
                         clause.insertFirst(-posLiteral);
-                        R1Clauses.add(clause);
+
+                        r1Clauses.add(clause);
                     }
                     // r1(x,y)^t v ¬e(x+1,y)^t+1
                     if(j <= this.WorldDim) {
                         VecInt clause = new VecInt();
                         clause.insertFirst(r1Literal);
+                        // get e(x+1,y)^t+1
                         int posLiteral = coordToLineal(i + 1, j, this.EnvelopeFutureOffset);
                         clause.insertFirst(-posLiteral);
-                        R1Clauses.add(clause);
+
+                        r1Clauses.add(clause);
                     }
                     // r1(x,y)^t v ¬e(x+1,y+1)^t+1
                     if(j - 1 <= this.WorldDim) {
                         VecInt clause = new VecInt();
                         clause.insertFirst(r1Literal);
+                        // get e(x+1,y+1)^t+1
                         int posLiteral = coordToLineal(i + 1, j + 1, this.EnvelopeFutureOffset);
                         clause.insertFirst(-posLiteral);
-                        R1Clauses.add(clause);
+
+                        r1Clauses.add(clause);
                     }
                 }
             }
         }
-        return R1Clauses;
+        return r1Clauses;
     }
 
-    public ArrayList<VecInt> createReading2Clauses(int firstR2literal, int lastR2literal,int firstFutureLiteral, int lastFutureLiteral) {
-
-    }
-
-    public ArrayList<VecInt> createReading3Clauses(int firstR3literal, int lastR3literal,int firstFutureLiteral, int lastFutureLiteral) {
-        ArrayList<VecInt> R3Clauses = new ArrayList<>();
-
+    /**
+     * This method creates the clauses corresponding to the reading 2 of the sensor
+     * @return A list of all the clauses corresponding to the reading 2 of the sensor
+     */
+    public ArrayList<VecInt> createReading2Clauses() {
+        ArrayList<VecInt> r2Clauses = new ArrayList<>();
+        // for each position of the world:
         for(int i = 1; i <= this.WorldDim; i++) {
             for(int j = 1; j <= this.WorldDim; j++) {
-                // get r1(x,y)^t
-                int r1Literal = coordToLineal(i, j, this.Detector1Offset);
-                // create reading 1 clauses:
-                if(i - 1 <= this.WorldDim) {
-                    // r1(x,y)^t v ¬e(x-1,y-1)^t+1
+                // get r2(x,y)^t
+                int r1Literal = coordToLineal(i, j, this.Detector2Offset);
+                // create reading 2 clauses:
+                if(j + 1 <= this.WorldDim) {
+                    // r2(x,y)^t v ¬e(x+1,y+1)^t+1
+                    if(i + 1 <= this.WorldDim) {
+                        VecInt clause = new VecInt();
+                        clause.insertFirst(r1Literal);
+                        // get e(x+1,y+1)^t+1
+                        int posLiteral = coordToLineal(i + 1, j + 1, this.EnvelopeFutureOffset);
+                        clause.insertFirst(-posLiteral);
+
+                        r2Clauses.add(clause);
+                    }
+                    // r2(x,y)^t v ¬e(x,y+1)^t+1
+                    if(i <= this.WorldDim) {
+                        VecInt clause = new VecInt();
+                        clause.insertFirst(r1Literal);
+                        // get e(x,y+1)^t+1
+                        int posLiteral = coordToLineal(i , j + 1, this.EnvelopeFutureOffset);
+                        clause.insertFirst(-posLiteral);
+
+                        r2Clauses.add(clause);
+                    }
+                    // r2(x,y)^t v ¬e(x-1,y+1)^t+1
+                    if(i + 1 <= this.WorldDim) {
+                        VecInt clause = new VecInt();
+                        clause.insertFirst(r1Literal);
+                        // get e(x-1,y+1)^t+1
+                        int posLiteral = coordToLineal(i - 1, j + 1, this.EnvelopeFutureOffset);
+                        clause.insertFirst(-posLiteral);
+
+                        r2Clauses.add(clause);
+                    }
+                }
+            }
+        }
+        return r2Clauses;
+    }
+
+    /**
+     * This method creates the clauses corresponding to the reading 3 of the sensor
+     * @return A list of all the clauses corresponding to the reading 3 of the sensor
+     */
+    public ArrayList<VecInt> createReading3Clauses() {
+        ArrayList<VecInt> r3Clauses = new ArrayList<>();
+        // for each position of the world:
+        for(int i = 1; i <= this.WorldDim; i++) {
+            for(int j = 1; j <= this.WorldDim; j++) {
+                // get r3(x,y)^t
+                int r1Literal = coordToLineal(i, j, this.Detector3Offset);
+                // create reading 3 clauses:
+                if(i - 1 >= 1) {
+                    // r3(x,y)^t v ¬e(x-1,y-1)^t+1
                     if(j - 1 <= this.WorldDim) {
                         VecInt clause = new VecInt();
                         clause.insertFirst(r1Literal);
+                        // get e(x-1,y-1)^t+1
                         int posLiteral = coordToLineal(i - 1, j - 1, this.EnvelopeFutureOffset);
                         clause.insertFirst(-posLiteral);
-                        R3Clauses.add(clause);
+
+                        r3Clauses.add(clause);
                     }
-                    // r1(x,y)^t v ¬e(x-1,y)^t+1
+                    // r3(x,y)^t v ¬e(x-1,y)^t+1
                     if(j <= this.WorldDim) {
                         VecInt clause = new VecInt();
                         clause.insertFirst(r1Literal);
+                        // get e(x-1,y)^t+1
                         int posLiteral = coordToLineal(i - 1, j, this.EnvelopeFutureOffset);
                         clause.insertFirst(-posLiteral);
-                        R3Clauses.add(clause);
+
+                        r3Clauses.add(clause);
                     }
-                    // r1(x,y)^t v ¬e(x-1,y+1)^t+1
+                    // r3(x,y)^t v ¬e(x-1,y+1)^t+1
                     if(j - 1 <= this.WorldDim) {
                         VecInt clause = new VecInt();
                         clause.insertFirst(r1Literal);
+                        // get e(x-1,y+1)^t+1
                         int posLiteral = coordToLineal(i - 1, j + 1, this.EnvelopeFutureOffset);
                         clause.insertFirst(-posLiteral);
-                        R3Clauses.add(clause);
+
+                        r3Clauses.add(clause);
                     }
                 }
             }
         }
-        return R3Clauses;
-
+        return r3Clauses;
     }
+    /**
+     * This method creates the clauses corresponding to the reading 4 of the sensor
+     * @return A list of all the clauses corresponding to the reading 4 of the sensor
+     */
+    public ArrayList<VecInt> createReading4Clauses() {
+        ArrayList<VecInt> r4Clauses = new ArrayList<>();
+        // for each position of the world:
+        for(int i = 1; i <= this.WorldDim; i++) {
+            for(int j = 1; j <= this.WorldDim; j++) {
+                // get r4(x,y)^t
+                int r1Literal = coordToLineal(i, j, this.Detector4Offset);
+                // create reading 4 clauses:
+                if(j - 1 >= 1) {
+                    // r4(x,y)^t v ¬e(x+1,y-1)^t+1
+                    if(i + 1 <= this.WorldDim) {
+                        VecInt clause = new VecInt();
+                        clause.insertFirst(r1Literal);
+                        // get e(x+1,y-1)^t+1
+                        int posLiteral = coordToLineal(i + 1, j - 1, this.EnvelopeFutureOffset);
+                        clause.insertFirst(-posLiteral);
 
-    public ArrayList<VecInt> createReading4Clauses(int firstR4literal, int lastR4literal,int firstFutureLiteral, int lastFutureLiteral) {
+                        r4Clauses.add(clause);
+                    }
+                    // r4(x,y)^t v ¬e(x,y-1)^t+1
+                    if(i <= this.WorldDim) {
+                        VecInt clause = new VecInt();
+                        clause.insertFirst(r1Literal);
+                        // get e(x,y-1)^t+1
+                        int posLiteral = coordToLineal(i , j - 1, this.EnvelopeFutureOffset);
+                        clause.insertFirst(-posLiteral);
 
-    }
+                        r4Clauses.add(clause);
+                    }
+                    // r4(x,y)^t v ¬e(x-1,y-1)^t+1
+                    if(i + 1 <= this.WorldDim) {
+                        VecInt clause = new VecInt();
+                        clause.insertFirst(r1Literal);
+                        // get e(x-1,y-1)^t+1
+                        int posLiteral = coordToLineal(i - 1, j - 1, this.EnvelopeFutureOffset);
+                        clause.insertFirst(-posLiteral);
 
-    public ArrayList<VecInt> createReading5Clauses(int firstR5literal, int lastR5literal) {
-        ArrayList<VecInt> R5Clauses = new ArrayList<>();
-        for(int i = firstR5literal; i <= lastR5literal; i++){
-            VecInt clause = new VecInt();
-            clause.insertFirst(i);
-            clause.insertFirst(i + this.WorldLinealDim * 6);
-            R5Clauses.add(clause);
+                        r4Clauses.add(clause);
+                    }
+                }
+            }
         }
-        return R5Clauses;
+        return r4Clauses;
+    }
+    /**
+     * This method creates the clauses corresponding to the reading 5 of the sensor
+     * @return A list of all the clauses corresponding to the reading 5 of the sensor
+     */
+    public ArrayList<VecInt> createReading5Clauses() {
+        ArrayList<VecInt> r5Clauses = new ArrayList<>();
+        // for each position of the world:
+        for(int i = 1; i <= this.WorldDim; i++){
+            for(int j = 1; j <= this.WorldDim; i++){
+                VecInt clause = new VecInt();
+                // get r5(x,y)^t
+                int r1Literal = coordToLineal(i, j, this.Detector5Offset);
+                clause.insertFirst(r1Literal);
+                // get e(x,y)^t+1
+                int posLiteral = coordToLineal(i, j, this.EnvelopeFutureOffset);
+                clause.insertFirst(-posLiteral);
+                // add r5(x,y)^t v -e(x,y)^t+1 clause
+                r5Clauses.add(clause);
+            }
+        }
+        return r5Clauses;
     }
 
 
